@@ -2,7 +2,8 @@ import { TextEncoder } from 'util';
 import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
-	const fakeTs = vscode.Uri.from({
+
+	const fakeMain = vscode.Uri.from({
 		scheme: FsProvider.scheme,
 		path: '/main.ts'
 	});
@@ -15,10 +16,11 @@ export function activate(context: vscode.ExtensionContext) {
 	// Register command for testing functionality
 	context.subscriptions.push(vscode.commands.registerCommand('test-ext.helloWorld', async () => {
 		// Simulate opening a ts file (this would be the office script file the user works with)
-		const doc2 = await vscode.workspace.openTextDocument(fakeTs);
+		const doc2 = await vscode.workspace.openTextDocument(fakeMain);
 		await vscode.window.showTextDocument(doc2);
 
-		// Open the d.ts just in the background (do not show to user)
+		// Open the d.ts just in the background (does not show to user)
+		// Office scripts would do this in the background when the user first opens a script to edit
 		await vscode.workspace.openTextDocument(fakeDts);
 	}));
 
@@ -34,6 +36,7 @@ class FsProvider implements vscode.FileSystemProvider {
 	// For office scripts, please share the scheme you'd like to use and we can add it to the list
 	static scheme = 'memfs';
 
+	// TODO: You can use this event to mark when the d.ts changes. 
 	private readonly _onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 	public readonly onDidChangeFile = this._onDidChangeFile.event;
 
@@ -63,11 +66,17 @@ class FsProvider implements vscode.FileSystemProvider {
 	}
 
 	readFile(uri: vscode.Uri): Uint8Array | Thenable<Uint8Array> {
+
 		let text: string;
 		if (uri.toString().endsWith('.d.ts')) {
-			text = `declare const xyz: number;`;
+			// Return the actual d.ts contents here.
+			text = `/**
+			* Does excel things.
+			*/
+			declare function doExcelThings(): number;`;
 		} else {
-			text = `function main() { xyz; }`;
+			// Simulate some office script file contents
+			text = `function main() { doExcelThings(); }`;
 		}
 		return new TextEncoder().encode(text);
 	}
